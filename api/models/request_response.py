@@ -50,6 +50,189 @@ class AccidentInput(BaseModel):
     
     duration_minutes: float = Field(0, ge=0)
     
+    # =========================================================
+    # TYPE VALIDATORS (Prevent non-numeric values)
+    # =========================================================
+    
+    @field_validator('temperature', mode='before')
+    def check_temperature_type(cls, v):
+        if isinstance(v, str):
+            try:
+                return float(v)
+            except ValueError:
+                raise ValueError(f'Temperature must be a number, got "{v}"')
+        return v
+    
+    @field_validator('humidity', mode='before')
+    def check_humidity_type(cls, v):
+        if isinstance(v, str):
+            try:
+                return float(v)
+            except ValueError:
+                raise ValueError(f'Humidity must be a number, got "{v}"')
+        return v
+    
+    @field_validator('precipitation', mode='before')
+    def check_precipitation_type(cls, v):
+        if isinstance(v, str):
+            try:
+                return float(v)
+            except ValueError:
+                raise ValueError(f'Precipitation must be a number, got "{v}"')
+        return v
+    
+    @field_validator('visibility', mode='before')
+    def check_visibility_type(cls, v):
+        if isinstance(v, str):
+            try:
+                return float(v)
+            except ValueError:
+                raise ValueError(f'Visibility must be a number, got "{v}"')
+        return v
+    
+    @field_validator('wind_speed', mode='before')
+    def check_wind_speed_type(cls, v):
+        if isinstance(v, str):
+            try:
+                return float(v)
+            except ValueError:
+                raise ValueError(f'Wind speed must be a number, got "{v}"')
+        return v
+    
+    @field_validator('hour', mode='before')
+    def check_hour_type(cls, v):
+        if isinstance(v, str):
+            try:
+                return int(float(v))
+            except ValueError:
+                raise ValueError(f'Hour must be a number, got "{v}"')
+        return v
+    
+    @field_validator('month', mode='before')
+    def check_month_type(cls, v):
+        if isinstance(v, str):
+            try:
+                return int(float(v))
+            except ValueError:
+                raise ValueError(f'Month must be a number, got "{v}"')
+        return v
+    
+    @field_validator('day_of_week', mode='before')
+    def check_day_of_week_type(cls, v):
+        if isinstance(v, str):
+            try:
+                return int(float(v))
+            except ValueError:
+                raise ValueError(f'Day of week must be a number, got "{v}"')
+        return v
+    
+    @field_validator('is_weekend', mode='before')
+    def check_is_weekend_type(cls, v):
+        if isinstance(v, str):
+            if v.lower() in ['true', 'yes', '1']:
+                return 1
+            if v.lower() in ['false', 'no', '0']:
+                return 0
+            try:
+                return int(float(v))
+            except ValueError:
+                raise ValueError(f'IsWeekend must be 0 or 1, got "{v}"')
+        return v
+    
+    @field_validator('duration_minutes', mode='before')
+    def check_duration_type(cls, v):
+        if isinstance(v, str):
+            try:
+                return float(v)
+            except ValueError:
+                raise ValueError(f'Duration must be a number, got "{v}"')
+        return v
+    
+    # Binary field type validators
+    @field_validator('junction', 'traffic_signal', 'crossing', 'railway', 'stop',
+                     'traffic_calming', 'roundabout', 'amenity', 'station', 'no_exit',
+                     'has_blocked', 'has_jackknife', 'has_multi_vehicle', 'has_rollover',
+                     'has_road_closed', 'has_slow_traffic', 'has_queueing', 'has_shoulder',
+                     'has_injury', 'has_fatality', mode='before')
+    def check_binary_type(cls, v, info):
+        if isinstance(v, str):
+            if v.lower() in ['true', 'yes', '1']:
+                return 1
+            if v.lower() in ['false', 'no', '0']:
+                return 0
+            try:
+                return int(float(v))
+            except ValueError:
+                raise ValueError(f'{info.field_name} must be 0 or 1, got "{v}"')
+        
+        if v not in [0, 1]:
+            raise ValueError(f'{info.field_name} must be 0 or 1, got {v}')
+        return v
+    
+    # =========================================================
+    # RANGE VALIDATORS (Prevent out-of-range values)
+    # =========================================================
+    
+    @field_validator('temperature')
+    def validate_temperature(cls, v):
+        if v < -50 or v > 130:
+            raise ValueError(f'Temperature must be between -50°F and 130°F, got {v}')
+        return v
+    
+    @field_validator('humidity')
+    def validate_humidity(cls, v):
+        if v < 0 or v > 100:
+            raise ValueError(f'Humidity must be between 0% and 100%, got {v}')
+        return v
+    
+    @field_validator('precipitation')
+    def validate_precipitation(cls, v):
+        if v < 0 or v > 10:
+            raise ValueError(f'Precipitation must be between 0 and 10 inches, got {v}')
+        return v
+    
+    @field_validator('visibility')
+    def validate_visibility(cls, v):
+        if v < 0 or v > 12:
+            raise ValueError(f'Visibility must be between 0 and 12 miles, got {v}')
+        return v
+    
+    @field_validator('wind_speed')
+    def validate_wind_speed(cls, v):
+        if v < 0 or v > 100:
+            raise ValueError(f'Wind speed must be between 0 and 100 mph, got {v}')
+        return v
+    
+    @field_validator('hour')
+    def validate_hour(cls, v):
+        if v < 0 or v > 23:
+            raise ValueError(f'Hour must be between 0 and 23, got {v}')
+        return v
+    
+    @field_validator('month')
+    def validate_month(cls, v):
+        if v < 1 or v > 12:
+            raise ValueError(f'Month must be between 1 and 12, got {v}')
+        return v
+    
+    @field_validator('day_of_week')
+    def validate_day_of_week(cls, v):
+        if v < 0 or v > 6:
+            raise ValueError(f'Day of week must be between 0 and 6, got {v}')
+        return v
+    
+    @field_validator('duration_minutes')
+    def validate_duration(cls, v):
+        if v < 0:
+            raise ValueError(f'Duration cannot be negative, got {v}')
+        if v > 1440:
+            raise ValueError(f'Duration cannot exceed 1440 minutes (24 hours), got {v}')
+        return v
+    
+    # =========================================================
+    # CATEGORICAL VALIDATORS
+    # =========================================================
+    
     @field_validator('state')
     def validate_state(cls, v):
         valid = ['GA', 'CT', 'CA', 'TX', 'FL', 'NY', 'IL', 'PA', 'OH', 'MI', 'NJ', 'NC', 'VA', 'WA', 'MA']
@@ -83,6 +266,7 @@ class AccidentInput(BaseModel):
 
 class AccidentResponse(BaseModel):
     severity: int
+    expected_severity: float
     severity_label: str
     probability: float
     confidence: str
