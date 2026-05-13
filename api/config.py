@@ -6,7 +6,7 @@ Configuration - Full feature list with default values
 import os
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-MODEL_PATH = os.path.join(BASE_DIR, "outputs/models/tuned_model.pkl")
+MODEL_PATH = os.path.join(BASE_DIR, "outputs/models/final_model.pkl")
 
 API_TITLE = "Accident Severity Predictor API"
 API_VERSION = "1.0.0"
@@ -26,7 +26,7 @@ FEATURE_NAMES = [
     'has_road_closed', 'has_slow_traffic', 'has_queueing', 'has_shoulder',
     'has_fatality', 'has_injury', 'has_ice', 'has_snow', 'has_fog', 'has_heavy_rain',
     'State', 'Weather_Condition', 'TimeOfDay', 'Season', 'Sunrise_Sunset',
-    'Rain_Junction', 'Rush_Hour'
+    'Rain_Junction', 'Rush_Hour', 'Late_Night'
 ]
 
 # =========================================================
@@ -75,7 +75,6 @@ DEFAULT_VALUES = {
     'Rain_Junction': 0,
     'Rush_Hour': 0,
     'Late_Night': 0,
-    'Duration_Minutes': 118.91,   # mean from data
 }
 
 # =========================================================
