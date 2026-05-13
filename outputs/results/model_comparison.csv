@@ -1,0 +1,7 @@
+model,accuracy,train_time_sec,inference_time_ms,model_file
+xgboost,0.837615,29.35,948.84,outputs/models/xgboost.pkl
+lightgbm,0.834325,16.59,1903.34,outputs/models/lightgbm.pkl
+decision_tree,0.82765,13.61,412.08,outputs/models/decision_tree.pkl
+neural_network,0.82526,548.42,1771.83,outputs/models/neural_network.pkl
+random_forest,0.82114,44.67,688.83,outputs/models/random_forest.pkl
+logistic_regression,0.80226,127.65,460.83,outputs/models/logistic_regression.pkl
