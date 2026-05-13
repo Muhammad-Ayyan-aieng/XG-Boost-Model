@@ -38,20 +38,13 @@ def get_severity_label(severity: int) -> str:
 def predict(accident: AccidentInput):
     """
     Predict accident severity based on weather, time, road features, and keywords.
-    
-    Returns:
-        - severity: 1-4 (1=Minor, 2=Moderate, 3=Serious, 4=Severe)
-        - severity_label: Human-readable description
-        - probability: Confidence of prediction (0-1)
-        - confidence: Very High/High/Medium/Low
-        - all_probabilities: Probability for each severity level
     """
     # Check if model is loaded
     if not model_loader.is_loaded():
         raise HTTPException(status_code=503, detail="Model not loaded")
     
     try:
-        # Convert user input to 43 features
+        # Convert user input to features
         features = build_features(accident)
         
         # Get prediction (0,1,2,3) and convert to (1,2,3,4)
@@ -62,9 +55,20 @@ def predict(accident: AccidentInput):
         probabilities = model_loader.predict_proba(features)
         probability = float(max(probabilities))
         
+        # =========================================================
+        # ADD THIS: Calculate Expected Severity (Float)
+        # =========================================================
+        expected_severity = (
+            1 * probabilities[0] +
+            2 * probabilities[1] +
+            3 * probabilities[2] +
+            4 * probabilities[3]
+        )
+        
         # Prepare response
         return AccidentResponse(
             severity=severity,
+            expected_severity=round(expected_severity, 2),  # ← NEW FIELD
             severity_label=get_severity_label(severity),
             probability=round(probability, 4),
             confidence=get_confidence(probability),
