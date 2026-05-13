@@ -7,6 +7,7 @@ import joblib
 import os
 import numpy as np
 import logging
+from config import MODEL_PATH
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -27,8 +28,10 @@ class ModelLoader:
         """Load model from disk"""
         if model_path is None:
             base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            model_path = os.path.join(base_dir, "outputs/models/tuned_model.pkl")
+            model_path = MODEL_PATH
         
+        print(f"🔍 LOADING MODEL FROM: {model_path}")
+
         try:
             self._model = joblib.load(model_path)
             logger.info(f"Model loaded from {model_path}")
