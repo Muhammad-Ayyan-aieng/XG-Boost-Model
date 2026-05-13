@@ -11,13 +11,13 @@ from config import (
 
 def build_features(input_data) -> list:
     """
-    Convert AccidentInput to 43-number list for model prediction.
+    Convert AccidentInput to 41-number list for model prediction.
     
     Args:
         input_data: AccidentInput object from request
         
     Returns:
-        List of 43 floats/ints in the exact order the model expects
+        List of 41 floats/ints in the exact order the model expects
     """
     # Start with default values
     features = DEFAULT_VALUES.copy()
@@ -69,9 +69,7 @@ def build_features(input_data) -> list:
     features['TimeOfDay'] = TIME_MAP.get(input_data.time_of_day, 2)
     features['Season'] = SEASON_MAP.get(input_data.season, 1)
     features['Sunrise_Sunset'] = SUNRISE_MAP.get(input_data.sunrise_sunset, 0)
-    
-    # Optional features
-    features['Duration_Minutes'] = input_data.duration_minutes
+    features['Late_Night'] = input_data.late_night if hasattr(input_data, 'late_night') else 0
     
     # Return in the exact order the model expects
     return [features[name] for name in FEATURE_NAMES]
