@@ -6,7 +6,7 @@ Configuration - Full feature list with default values
 import os
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-MODEL_PATH = os.path.join(BASE_DIR, "outputs/models/final_model.pkl")
+MODEL_PATH = os.path.join(BASE_DIR, "outputs/models/tuned_model.pkl")
 
 API_TITLE = "Accident Severity Predictor API"
 API_VERSION = "1.0.0"
