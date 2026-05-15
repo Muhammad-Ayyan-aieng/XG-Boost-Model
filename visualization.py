@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
-from sklearn.metrics import accuracy_score, confusion_matrix
+from sklearn.metrics import accuracy_score, confusion_matrix, recall_score
 
 os.makedirs("outputs/figures", exist_ok=True)
 
@@ -52,6 +52,12 @@ default_acc = accuracy_score(y_test, y_pred_default)
 tuned_acc = accuracy_score(y_test, y_pred_tuned)
 print(f"   Default accuracy: {default_acc*100:.2f}%")
 print(f"   Tuned accuracy: {tuned_acc*100:.2f}%")
+
+# Calculate recall for each severity
+print("\n   Recall by severity (Tuned Model):")
+for i in range(4):
+    recall = recall_score(y_test, y_pred_tuned, labels=[i], average=None)[0]
+    print(f"   Severity {i+1}: {recall*100:.1f}%")
 
 # =========================================================
 # FIGURE 1: CONFUSION MATRIX (Tuned Model)
@@ -134,7 +140,7 @@ plt.close()
 print("   Saved: outputs/figures/severity_distribution.png")
 
 # =========================================================
-# FIGURE 5: PER CLASS ACCURACY (Optional)
+# FIGURE 5: PER CLASS ACCURACY (Tuned Model)
 # =========================================================
 print("\n8. Generating per-class accuracy chart...")
 cm_normalized = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
@@ -157,6 +163,56 @@ plt.savefig('outputs/figures/per_class_accuracy.png', dpi=150)
 plt.close()
 print("   Saved: outputs/figures/per_class_accuracy.png")
 
+# =========================================================
+# FIGURE 6: RECALL COMPARISON CHART (NEW)
+# =========================================================
+print("\n9. Generating recall comparison chart...")
+recalls = []
+for i in range(4):
+    recall = recall_score(y_test, y_pred_tuned, labels=[i], average=None)[0]
+    recalls.append(recall * 100)
+
+plt.figure(figsize=(8, 6))
+bars = plt.bar([1, 2, 3, 4], recalls, color=colors, edgecolor='black')
+plt.xlabel('Severity Level', fontsize=12)
+plt.ylabel('Recall (%)', fontsize=12)
+plt.title('Recall by Severity - Tuned XGBoost', fontsize=14)
+plt.ylim(0, 100)
+plt.xticks([1, 2, 3, 4])
+
+for bar, rec in zip(bars, recalls):
+    plt.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 1,
+             f'{rec:.1f}%', ha='center', va='bottom', fontsize=10)
+
+plt.tight_layout()
+plt.savefig('outputs/figures/recall_by_severity.png', dpi=150)
+plt.close()
+print("   Saved: outputs/figures/recall_by_severity.png")
+
+# =========================================================
+# FIGURE 7: PREDICTION DISTRIBUTION VS ACTUAL
+# =========================================================
+print("\n10. Generating prediction distribution chart...")
+pred_dist = np.bincount(y_pred_tuned, minlength=4)
+actual_dist = np.bincount(y_test, minlength=4)
+
+x = np.arange(4)
+width = 0.35
+
+plt.figure(figsize=(8, 6))
+plt.bar(x - width/2, actual_dist, width, label='Actual', color='#3498db', edgecolor='black')
+plt.bar(x + width/2, pred_dist, width, label='Predicted', color='#e74c3c', edgecolor='black')
+plt.xlabel('Severity Level', fontsize=12)
+plt.ylabel('Number of Accidents', fontsize=12)
+plt.title('Actual vs Predicted Distribution', fontsize=14)
+plt.xticks(x, [1, 2, 3, 4])
+plt.legend()
+
+plt.tight_layout()
+plt.savefig('outputs/figures/prediction_distribution.png', dpi=150)
+plt.close()
+print("   Saved: outputs/figures/prediction_distribution.png")
+
 print("\n" + "=" * 60)
 print("VISUALIZATION COMPLETE!")
 print("=" * 60)
@@ -166,3 +222,5 @@ print("   - feature_importance.png")
 print("   - accuracy_comparison.png")
 print("   - severity_distribution.png")
 print("   - per_class_accuracy.png")
+print("   - recall_by_severity.png")
+print("   - prediction_distribution.png")
