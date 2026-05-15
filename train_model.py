@@ -1,5 +1,5 @@
 """
-Train XGBoost on full 6.7M dataset with CLASS WEIGHTS for ALL severity levels
+Train XGBoost on full 6.7M dataset with BALANCED CLASS WEIGHTS
 Output: outputs/models/final_model.pkl
         documentation/training_report.md
 """
@@ -12,7 +12,6 @@ import os
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
-from sklearn.utils.class_weight import compute_class_weight
 import xgboost as xgb
 
 os.makedirs("outputs/models", exist_ok=True)
@@ -22,7 +21,7 @@ RANDOM_STATE = 42
 TEST_SIZE = 0.2
 
 print("=" * 60)
-print("TRAINING XGBOOST WITH CLASS WEIGHTS")
+print("TRAINING XGBOOST WITH BALANCED CLASS WEIGHTS")
 print("=" * 60)
 
 print("\n1. Loading data...")
@@ -61,29 +60,37 @@ print(f"   Train: {len(X_train):,} rows")
 print(f"   Test: {len(X_test):,} rows")
 
 # =========================================================
-# CALCULATE CLASS WEIGHTS FOR ALL SEVERITIES
+# BALANCED CLASS WEIGHTS (MANUAL - FIXED FOR LOW BIAS)
 # =========================================================
-print("\n4. Calculating class weights...")
-classes = np.unique(y_train)
-class_weights = compute_class_weight('balanced', classes=classes, y=y_train)
-sample_weights = np.array([class_weights[int(label)] for label in y_train])
+print("\n4. Setting balanced class weights...")
 
-print("   Class weights (higher = more important):")
-for i, weight in enumerate(class_weights):
-    print(f"   Severity {i+1}: {weight:.4f}")
+# MANUAL BALANCED WEIGHTS - Test these values
+# These weights are designed to prevent over-prediction of high severity
+class_weights_dict = {
+    0: 2.5,   # Severity 1 (Minor) - moderate emphasis
+    1: 1.0,   # Severity 2 (Moderate) - baseline
+    2: 1.2,   # Severity 3 (Serious) - slight emphasis
+    3: 2.0    # Severity 4 (Severe) - reduced from 9.46 to 2.0
+}
+
+sample_weights = np.array([class_weights_dict[int(label)] for label in y_train])
+
+print("   Class weights used:")
+for i in range(4):
+    print(f"   Severity {i+1}: {class_weights_dict[i]:.2f}")
 
 # =========================================================
 # TRAIN WITH OPTIMIZED PARAMETERS
 # =========================================================
-print("\n5. Training XGBoost with class weights...")
+print("\n5. Training XGBoost with balanced weights...")
 start = time.time()
 
 model = xgb.XGBClassifier(
     objective='multi:softmax',
     num_class=4,
-    n_estimators=300,      # More trees for better learning
-    max_depth=8,           # Deeper trees for complex patterns
-    learning_rate=0.05,    # Slower learning for better accuracy
+    n_estimators=200,      # Balanced number of trees
+    max_depth=6,           # Shallower trees to prevent overfitting
+    learning_rate=0.07,    # Medium learning rate
     subsample=0.8,
     colsample_bytree=0.8,
     min_child_weight=3,
@@ -116,26 +123,28 @@ print("              Sev1  Sev2  Sev3  Sev4")
 for i, row in enumerate(cm):
     print(f"   Actual Sev{i+1}: {row[0]:5d} {row[1]:5d} {row[2]:5d} {row[3]:5d}")
 
-# Show probability distribution for severe cases
-print("\n7. Testing severe case prediction...")
-test_severe = X_test[y_test == 3]  # Severity 4 cases
-if len(test_severe) > 0:
-    probas = model.predict_proba(test_severe[:10])
-    print(f"   Sample of 10 actual Severity 4 cases:")
-    for i, prob in enumerate(probas[:5]):
-        print(f"   Case {i+1}: Sev1={prob[0]:.2f}, Sev2={prob[1]:.2f}, Sev3={prob[2]:.2f}, Sev4={prob[3]:.2f}")
+# Check prediction distribution
+pred_dist = np.bincount(y_pred, minlength=4)
+print("\n   Prediction distribution:")
+for i, count in enumerate(pred_dist):
+    pct = count / len(y_pred) * 100
+    print(f"   Severity {i+1}: {count:,} ({pct:.1f}%)")
+
+# Check average predictions
+print(f"\n   Average predicted severity: {y_pred.mean() + 1:.2f}")
+print(f"   Average actual severity: {y_test.mean() + 1:.2f}")
 
 # =========================================================
 # SAVE MODEL
 # =========================================================
-print("\n8. Saving model...")
+print("\n7. Saving model...")
 joblib.dump(model, "outputs/models/final_model.pkl")
 print("   Model saved: outputs/models/final_model.pkl")
 
 # =========================================================
 # SAVE REPORT
 # =========================================================
-print("\n9. Saving report...")
+print("\n8. Saving report...")
 report_path = "documentation/training_report.md"
 with open(report_path, "w") as f:
     f.write("# Model Training Report\n\n")
@@ -151,8 +160,8 @@ with open(report_path, "w") as f:
     f.write("\n## Class Weights Used\n\n")
     f.write("| Severity | Weight |\n")
     f.write("|----------|--------|\n")
-    for i, weight in enumerate(class_weights):
-        f.write(f"| {i+1} | {weight:.4f} |\n")
+    for i in range(4):
+        f.write(f"| {i+1} | {class_weights_dict[i]:.2f} |\n")
     
     f.write("\n## Training Configuration\n\n")
     f.write("| Parameter | Value |\n")
@@ -161,9 +170,9 @@ with open(report_path, "w") as f:
     f.write(f"| Training rows | {len(X_train):,} |\n")
     f.write(f"| Testing rows | {len(X_test):,} |\n")
     f.write(f"| Features | {X.shape[1]} |\n")
-    f.write(f"| n_estimators | 300 |\n")
-    f.write(f"| max_depth | 8 |\n")
-    f.write(f"| learning_rate | 0.05 |\n")
+    f.write(f"| n_estimators | 200 |\n")
+    f.write(f"| max_depth | 6 |\n")
+    f.write(f"| learning_rate | 0.07 |\n")
     
     f.write("\n## Performance\n\n")
     f.write("| Metric | Value |\n")
@@ -171,7 +180,15 @@ with open(report_path, "w") as f:
     f.write(f"| Test Accuracy | {accuracy*100:.2f}% |\n")
     f.write(f"| Training Time | {train_time:.2f} seconds |\n\n")
     
-    f.write("## Classification Report\n\n```\n")
+    f.write("## Prediction Distribution\n\n")
+    f.write("| Severity | Actual % | Predicted % |\n")
+    f.write("|----------|----------|-------------|\n")
+    for i in range(4):
+        actual_pct = (y_test == i).sum() / len(y_test) * 100
+        pred_pct = pred_dist[i] / len(y_pred) * 100
+        f.write(f"| {i+1} | {actual_pct:.1f}% | {pred_pct:.1f}% |\n")
+    
+    f.write("\n## Classification Report\n\n```\n")
     f.write(classification_report(y_test, y_pred, target_names=['Severity 1', 'Severity 2', 'Severity 3', 'Severity 4']))
     f.write("\n```\n\n")
     
@@ -184,8 +201,7 @@ with open(report_path, "w") as f:
     
     f.write("## Output Files\n\n")
     f.write("- `outputs/models/final_model.pkl`\n")
-    f.write("- `outputs/xgboost_model.pkl`\n")
-
+ 
 print(f"   Report saved: {report_path}")
 
 print("\n" + "=" * 60)
